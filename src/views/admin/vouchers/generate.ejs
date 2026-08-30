@@ -1,0 +1,67 @@
+<%
+  var title = 'Generate Voucher';
+  var currentPage = 'vouchers';
+  var body = `
+    <div class="admin-page-header">
+      <div class="admin-page-title">Generate Voucher</div>
+      <a href="/admin/vouchers" class="btn btn-ghost btn-sm">← Kembali</a>
+    </div>
+
+    ${ error ? `<div class="alert alert-error">${ error }</div>` : '' }
+
+    <form method="POST" action="/admin/vouchers/generate">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:600px;" class="mb-3">
+        <div class="form-group">
+          <label for="gen-script">Jenis Script</label>
+          <select name="scriptTypeId" id="gen-script" required>
+            <option value="">— Pilih —</option>
+            ${ scriptTypes.map(st => `<option value="${ st.id }">${ st.code } — ${ st.name }</option>`).join('') }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="gen-days">Durasi (Hari)</label>
+          <input type="number" name="durationDays" id="gen-days" min="1" max="3650" placeholder="7" required>
+        </div>
+        <div class="form-group">
+          <label for="gen-qty">Jumlah Voucher</label>
+          <input type="number" name="quantity" id="gen-qty" min="1" max="500" value="1" placeholder="1">
+        </div>
+        <div class="form-group">
+          <label for="gen-batch">Label Batch (opsional)</label>
+          <input type="text" name="batchLabel" id="gen-batch" placeholder="Restock Sep 2026">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="gen-custom">Kode Custom (hanya untuk single voucher)</label>
+          <input type="text" name="customCode" id="gen-custom" class="mono-input" placeholder="Kosongkan untuk generate otomatis" style="text-transform:uppercase">
+          <div class="text-xs text-muted mt-1">Hanya berlaku jika Jumlah = 1. Format bebas, harus unik.</div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Generate</button>
+    </form>
+
+    ${ result ? `
+    <div class="mt-2">
+      <div class="alert alert-success">
+        Berhasil generate <strong>${ result.codes.length }</strong> voucher untuk <strong>${ result.scriptType }</strong> (${ result.days } hari).
+      </div>
+
+      <div class="section-title">Daftar Kode Voucher</div>
+      <div class="voucher-code-list mb-2">${ result.codes.join('\n') }</div>
+
+      <div class="flex gap-2">
+        <button onclick="copyAll()" class="btn btn-ghost btn-sm">Copy Semua</button>
+        <a href="/admin/vouchers/export?file=${ result.txtFile.split('/').pop() }" class="btn btn-ghost btn-sm">Download .txt</a>
+        <a href="/admin/vouchers/export?file=${ result.csvFile.split('/').pop() }" class="btn btn-ghost btn-sm">Download .csv</a>
+      </div>
+
+      <script>
+        function copyAll() {
+          const text = document.querySelector('.voucher-code-list').textContent.trim();
+          navigator.clipboard.writeText(text).then(() => alert('Disalin ke clipboard!'));
+        }
+      </script>
+    </div>
+    ` : '' }
+  `;
+%>
+<%- include('../../layouts/admin', { title, currentPage, admin, body }) %>

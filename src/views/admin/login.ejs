@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Lucifer License</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-card {
+      width: 100%; max-width: 360px;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: 4px;
+      padding: 2rem;
+    }
+    .login-title {
+      font-family: var(--f-mono);
+      color: var(--c-accent);
+      font-size: var(--text-sm);
+      letter-spacing: 0.1em;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-title">LUCIFER // ADMIN</div>
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+    <form method="POST" action="/admin/login">
+      <div class="form-group">
+        <label for="login-username">Username</label>
+        <input type="text" name="username" id="login-username" autocomplete="username" autofocus>
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input type="password" name="password" id="login-password" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:0.5rem;">
+        Masuk
+      </button>
+    </form>
+  </div>
+</body>
+</html>

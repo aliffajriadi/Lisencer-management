@@ -1,0 +1,105 @@
+<%
+  var title = 'Jenis Script';
+  var currentPage = 'script-types';
+  var isSuccess = typeof success !== 'undefined' && success;
+  var body = `
+    <div class="admin-page-header">
+      <div class="admin-page-title">Jenis Script</div>
+    </div>
+
+    ${ error ? `<div class="alert alert-error">${ error }</div>` : '' }
+    ${ isSuccess ? `<div class="alert alert-success">Perubahan berhasil disimpan.</div>` : '' }
+
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start;">
+      <!-- List -->
+      <div>
+        <div class="section-title">Daftar Jenis Script</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Nama</th>
+                <th>Lisensi</th>
+                <th>Voucher</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ scriptTypes.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:1.5rem" class="text-muted text-sm">Belum ada jenis script</td></tr>' :
+                scriptTypes.map(st => `
+                  <tr>
+                    <td class="td-mono" style="color:var(--c-accent)">${ st.code }</td>
+                    <td>${ st.name }</td>
+                    <td class="td-mono">${ st._count.licenses }</td>
+                    <td class="td-mono">${ st._count.vouchers }</td>
+                    <td><span class="badge ${ st.active ? 'badge-active' : 'badge-revoked' }">${ st.active ? 'Aktif' : 'Nonaktif' }</span></td>
+                    <td>
+                      <button
+                        class="btn btn-ghost btn-sm"
+                        onclick="openEdit(${ st.id }, '${ st.code }', \`${ st.name.replace(/`/g, '\\`') }\`, ${ st.active })"
+                      >Edit</button>
+                    </td>
+                  </tr>
+                `).join('')
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add form -->
+      <div>
+        <div class="section-title">Tambah Jenis Script Baru</div>
+        <form method="POST" action="/admin/script-types">
+          <div class="form-group">
+            <label for="st-code">Kode (unik, huruf kapital)</label>
+            <input type="text" name="code" id="st-code" class="mono-input" placeholder="DF" style="text-transform:uppercase" maxlength="10" required>
+          </div>
+          <div class="form-group">
+            <label for="st-name">Nama Lengkap</label>
+            <input type="text" name="name" id="st-name" placeholder="Dirtfarm Auto Farm" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Tambah</button>
+        </form>
+
+        <!-- Edit form (hidden, shown via JS) -->
+        <div id="edit-panel" style="display:none;margin-top:2rem">
+          <div class="section-title">Edit Script <span id="edit-code-label"></span></div>
+          <form method="POST" id="edit-form" action="">
+            <div class="form-group">
+              <label for="edit-name">Nama</label>
+              <input type="text" name="name" id="edit-name" required>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select name="active" id="edit-active">
+                <option value="1">Aktif</option>
+                <option value="0">Nonaktif</option>
+              </select>
+            </div>
+            <div class="flex gap-1">
+              <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="closeEdit()">Batal</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function openEdit(id, code, name, active) {
+        document.getElementById('edit-panel').style.display = 'block';
+        document.getElementById('edit-code-label').textContent = code;
+        document.getElementById('edit-name').value = name;
+        document.getElementById('edit-active').value = active ? '1' : '0';
+        document.getElementById('edit-form').action = '/admin/script-types/' + id;
+      }
+      function closeEdit() {
+        document.getElementById('edit-panel').style.display = 'none';
+      }
+    </script>
+  `;
+%>
+<%- include('../../layouts/admin', { title, currentPage, admin, body }) %>

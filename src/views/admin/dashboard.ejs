@@ -1,0 +1,76 @@
+<%
+  var title = 'Dashboard';
+  var currentPage = 'dashboard';
+  function fmtDate(d) {
+    if (!d) return '-';
+    return new Date(d).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  function licStatus(lic) {
+    if (lic.revoked) return 'revoked';
+    if (new Date(lic.expiresAt) <= new Date()) return 'expired';
+    return 'active';
+  }
+  var body = `
+    <div class="admin-page-header">
+      <div>
+        <div class="admin-page-title">Dashboard</div>
+        <div class="text-muted text-sm">${ new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }</div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Lisensi Aktif</div>
+        <div class="stat-value accent">${ stats.totalActive }</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Expire dalam 7 Hari</div>
+        <div class="stat-value ${ stats.expiringSoon > 0 ? 'danger' : '' }">${ stats.expiringSoon }</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Voucher</div>
+        <div class="stat-value">${ stats.totalVouchers }</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Voucher Terpakai</div>
+        <div class="stat-value">${ stats.usedVouchers }</div>
+      </div>
+    </div>
+
+    <div class="section-title">Lisensi Terbaru Diperbarui</div>
+    <div class="table-wrap mb-3">
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Script</th>
+            <th>Expired</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ recentLicenses.length === 0 ? '<tr><td colspan="4" class="text-muted text-sm" style="text-align:center;padding:1rem">Belum ada data</td></tr>' :
+            recentLicenses.map(lic => {
+              const st = licStatus(lic);
+              const label = st === 'active' ? 'Aktif' : st === 'expired' ? 'Expired' : 'Revoked';
+              return `
+                <tr>
+                  <td class="td-mono">${ lic.username }</td>
+                  <td><span class="text-mono text-xs">${ lic.scriptType.code }</span></td>
+                  <td class="td-mono">${ fmtDate(lic.expiresAt) }</td>
+                  <td><span class="badge badge-${ st }">${ label }</span></td>
+                </tr>
+              `;
+            }).join('')
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex gap-2">
+      <a href="/admin/licenses" class="btn btn-ghost btn-sm">Semua Lisensi →</a>
+      <a href="/admin/vouchers/generate" class="btn btn-primary btn-sm">+ Generate Voucher</a>
+    </div>
+  `;
+%>
+<%- include('../layouts/admin', { title, currentPage, admin, body }) %>

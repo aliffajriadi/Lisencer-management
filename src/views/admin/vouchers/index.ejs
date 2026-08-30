@@ -1,0 +1,136 @@
+<%
+  var title = 'Kelola Voucher';
+  var currentPage = 'vouchers';
+  function fmtDate(d) {
+    if (!d) return '-';
+    return new Date(d).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  function pageUrl(p) {
+    var params = new URLSearchParams();
+    if (filters.script) params.set('script', filters.script);
+    if (filters.status) params.set('status', filters.status);
+    params.set('page', p);
+    return '/admin/vouchers?' + params.toString();
+  }
+  function vStatus(v) {
+    if (v.voided) return 'voided';
+    if (v.usedAt) return 'used';
+    return 'unused';
+  }
+
+  var body = `
+    <div class="admin-page-header">
+      <div class="admin-page-title">Voucher Script</div>
+      <div class="flex gap-1">
+        <a href="/admin/vouchers/generate" class="btn btn-primary btn-sm">+ Generate Voucher SC</a>
+        <a href="/admin/vouchers/generate-name-change" class="btn btn-ghost btn-sm">Voucher Ganti Username</a>
+      </div>
+    </div>
+
+    <form method="GET" action="/admin/vouchers">
+      <div class="filter-bar">
+        <div class="form-group">
+          <label>Script</label>
+          <select name="script">
+            <option value="">Semua</option>
+            ${ scriptTypes.map(st => `<option value="${ st.code }" ${ filters.script === st.code ? 'selected' : '' }>${ st.code }</option>`).join('') }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="">Semua</option>
+            <option value="unused" ${ filters.status === 'unused' ? 'selected' : '' }>Belum Dipakai</option>
+            <option value="used" ${ filters.status === 'used' ? 'selected' : '' }>Sudah Dipakai</option>
+            <option value="voided" ${ filters.status === 'voided' ? 'selected' : '' }>Voided</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:0">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-ghost">Filter</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="text-muted text-xs mb-1">${ pagination.total } voucher &mdash; hal ${ pagination.page }/${ pagination.totalPages }</div>
+
+    <div class="table-wrap mb-2">
+      <table>
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Script</th>
+            <th>Durasi</th>
+            <th>Batch</th>
+            <th>Dipakai Oleh</th>
+            <th>Tgl Pakai</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ vouchers.length === 0 ? '<tr><td colspan="8" style="text-align:center;padding:1.5rem" class="text-muted text-sm">Tidak ada data</td></tr>' :
+            vouchers.map(v => {
+              const st = vStatus(v);
+              const label = st === 'unused' ? 'Belum Dipakai' : st === 'used' ? 'Dipakai' : 'Voided';
+              return `
+                <tr>
+                  <td class="td-mono" style="color:var(--c-accent)">${ v.code }</td>
+                  <td class="td-mono">${ v.scriptType.code }</td>
+                  <td class="td-mono">${ v.durationDays }d</td>
+                  <td class="text-xs text-muted">${ v.batchLabel || '—' }</td>
+                  <td class="td-mono">${ v.usedByUsername || '—' }</td>
+                  <td class="td-mono text-xs">${ v.usedAt ? fmtDate(v.usedAt) : '—' }</td>
+                  <td><span class="badge badge-${ st }">${ label }</span></td>
+                  <td>
+                    ${ st === 'unused' ? `
+                      <button
+                        class="btn btn-ghost btn-sm void-btn"
+                        data-id="${ v.id }"
+                        data-code="${ v.code }"
+                        onclick="voidVoucher(${ v.id }, '${ v.code }', this)"
+                      >Void</button>
+                    ` : '' }
+                  </td>
+                </tr>
+              `;
+            }).join('')
+          }
+        </tbody>
+      </table>
+    </div>
+
+    ${ pagination.totalPages > 1 ? `
+    <div class="pagination">
+      ${ pagination.page > 1 ? `<a href="${ pageUrl(pagination.page - 1) }">← Prev</a>` : '' }
+      <span>${ pagination.page } / ${ pagination.totalPages }</span>
+      ${ pagination.page < pagination.totalPages ? `<a href="${ pageUrl(pagination.page + 1) }">Next →</a>` : '' }
+    </div>
+    ` : '' }
+
+    <script>
+      async function voidVoucher(id, code, btn) {
+        if (!confirm('Void voucher ' + code + '? Tindakan ini tidak bisa dibatalkan.')) return;
+        btn.disabled = true;
+        btn.textContent = '...';
+        try {
+          const resp = await fetch('/admin/vouchers/' + id + '/void', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+          const data = await resp.json();
+          if (data.success) {
+            btn.closest('tr').querySelectorAll('td')[6].innerHTML = '<span class="badge badge-voided">Voided</span>';
+            btn.remove();
+          } else {
+            alert(data.error || 'Gagal void voucher.');
+            btn.disabled = false;
+            btn.textContent = 'Void';
+          }
+        } catch(e) {
+          alert('Terjadi kesalahan.');
+          btn.disabled = false;
+          btn.textContent = 'Void';
+        }
+      }
+    </script>
+  `;
+%>
+<%- include('../../layouts/admin', { title, currentPage, admin, body }) %>

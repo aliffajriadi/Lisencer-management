@@ -1,0 +1,251 @@
+<%
+  var title = 'Kelola Lisensi — Manage';
+  var currentPage = 'manage';
+
+  function fmtDate(d) {
+    if (!d) return '-';
+    return new Date(d).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  function licSt(lic, now) {
+    if (lic.revoked) return 'revoked';
+    if (new Date(lic.expiresAt) <= (now || new Date())) return 'expired';
+    return 'active';
+  }
+  function daysLeft(exp) { 
+    return Math.max(0, Math.ceil((new Date(exp) - new Date()) / 86400000)); 
+  }
+
+  // Bungkus seluruh konten ke dalam variabel `bodyHtml` agar di-render oleh layouts/main
+  var bodyHtml = '';
+  
+  if (step === 'input') {
+    bodyHtml = `
+      <h1 class="page-title">Kelola Lisensi</h1>
+      <p class="page-subtitle">Masukkan Management PIN kamu untuk melihat dan mengelola lisensi.</p>
+
+      ${ error ? `<div class="alert alert-error">${error}</div>` : '' }
+
+      <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1.5rem; align-items: start; max-width: 900px;" class="manage-split-container">
+        <div>
+          <div class="form-block" style="background: var(--c-surface); border: 1px solid var(--c-border); padding: 1.5rem; border-radius: 6px; margin-bottom: 1rem;">
+            <form method="POST" action="/manage" onsubmit="savePinToLocal()">
+              <div class="form-group">
+                <label for="m-pin">Management PIN</label>
+                <input
+                  type="text"
+                  name="pin"
+                  id="m-pin"
+                  class="mono-input"
+                  placeholder="XXXX-XXXX-XX"
+                  value="${ pin || '' }"
+                  autocomplete="off"
+                  spellcheck="false"
+                  style="letter-spacing:0.12em; font-size:1.1rem;"
+                  autofocus
+                >
+                <div class="text-xs text-muted mt-1">PIN ini kamu terima saat pertama kali redeem voucher.</div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Masuk →</button>
+            </form>
+          </div>
+
+          <div class="alert alert-info">
+            <strong>Petunjuk Penggunaan:</strong><br>
+            • Belum punya lisensi? <a href="/redeem">Redeem voucher</a> dulu.<br>
+            • Kehilangan PIN? Hubungi admin untuk melihat kembali PIN Anda di database admin.
+          </div>
+        </div>
+
+        <!-- Card List PIN Tersimpan (LocalStorage) -->
+        <div id="savedPinsCard" style="display: none; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 6px; padding: 1.25rem;">
+          <div style="font-size: var(--text-sm); font-weight: 600; color: var(--c-accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+            💾 PIN Tersimpan (Device)
+          </div>
+          <p class="text-xs text-muted mb-3" style="line-height: 1.4;">Klik PIN di bawah untuk otomatis mengisi form input di sebelah kiri:</p>
+          <div id="savedPinsList" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto;">
+            <!-- Diisi via JS -->
+          </div>
+        </div>
+      </div>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const savedPin = localStorage.getItem('lucifer_manage_pin');
+          const pinInput = document.getElementById('m-pin');
+          if (savedPin && pinInput && !pinInput.value) {
+            pinInput.value = savedPin;
+          }
+          renderSavedPins();
+        });
+
+        function savePinToLocal() {
+          const pinVal = document.getElementById('m-pin').value.trim();
+          if (pinVal) {
+            localStorage.setItem('lucifer_manage_pin', pinVal);
+            try {
+              let pinHistory = JSON.parse(localStorage.getItem('lucifer_pin_history') || '[]');
+              if (!pinHistory.includes(pinVal)) {
+                pinHistory.unshift(pinVal);
+                if (pinHistory.length > 5) pinHistory.pop();
+                localStorage.setItem('lucifer_pin_history', JSON.stringify(pinHistory));
+              }
+            } catch(e) {}
+          }
+        }
+
+        function renderSavedPins() {
+          try {
+            const pinHistory = JSON.parse(localStorage.getItem('lucifer_pin_history') || '[]');
+            const container = document.getElementById('savedPinsCard');
+            const listContainer = document.getElementById('savedPinsList');
+            
+            if (pinHistory.length > 0) {
+              container.style.display = 'block';
+              listContainer.innerHTML = pinHistory.map(pin => \`
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--c-border); padding: 0.5rem 0.75rem; border-radius: 4px;">
+                  <span class="text-mono text-sm" style="color: var(--c-accent); cursor: pointer; font-weight: 500;" onclick="selectPin('\${pin}')">\${pin}</span>
+                  <button class="btn btn-ghost btn-xs" onclick="deletePin('\${pin}', event)" style="padding: 0.1rem 0.3rem; font-size: 10px; border-color: transparent; color: var(--c-expired)">Hapus</button>
+                </div>
+              \`).join('');
+            } else {
+              container.style.display = 'none';
+            }
+          } catch(e) {}
+        }
+
+        function selectPin(pin) {
+          document.getElementById('m-pin').value = pin;
+          localStorage.setItem('lucifer_manage_pin', pin);
+        }
+
+        function deletePin(pin, event) {
+          event.stopPropagation();
+          if (confirm('Hapus PIN ini dari riwayat browser?')) {
+            try {
+              let pinHistory = JSON.parse(localStorage.getItem('lucifer_pin_history') || '[]');
+              pinHistory = pinHistory.filter(p => p !== pin);
+              localStorage.setItem('lucifer_pin_history', JSON.stringify(pinHistory));
+              
+              if (document.getElementById('m-pin').value === pin) {
+                document.getElementById('m-pin').value = '';
+                localStorage.removeItem('lucifer_manage_pin');
+              }
+              renderSavedPins();
+            } catch(e) {}
+          }
+        }
+      </script>
+    `;
+  } else if (step === 'dashboard' && licenses && primaryLicense) {
+    const licCards = licenses.map(function(lic) {
+      const st = licSt(lic, now);
+      const label = st === 'active' ? 'Aktif' : st === 'expired' ? 'Expired' : 'Revoked';
+      const days = st === 'active' ? daysLeft(lic.expiresAt) : 0;
+      const hasPIN = !!lic.managementPin;
+
+      return `
+        <div class="lic-card" id="lic-${ lic.id }" style="background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 6px; padding: 1.25rem; margin-bottom: 1rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+            <div>
+              <span style="font-family:var(--f-mono);font-size:1rem;color:var(--c-accent);font-weight:500;">${ lic.scriptType.code }</span>
+              <span style="color:var(--c-muted);font-size:var(--text-xs);margin-left:0.5rem;">— ${ lic.scriptType.name }</span>
+            </div>
+            <span class="badge badge-${ st }">${ label }</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.5rem 1rem;margin-bottom:1rem;">
+            <div>
+              <div class="text-xs text-muted" style="text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.15rem;">Username</div>
+              <div class="text-mono" style="font-size:0.9rem;">${ primaryLicense.username }</div>
+            </div>
+            <div>
+              <div class="text-xs text-muted" style="text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.15rem;">Expired</div>
+              <div class="text-mono" style="font-size:0.9rem;">${ fmtDate(lic.expiresAt) }</div>
+            </div>
+            ${ st === 'active' ? `
+            <div>
+              <div class="text-xs text-muted" style="text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.15rem;">Sisa</div>
+              <div class="text-mono" style="font-size:0.9rem;color:var(--c-active);">${ days } hari</div>
+            </div>
+            ` : '' }
+          </div>
+
+          <div class="flex gap-1" style="flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="togglePanel('extend-${ lic.id }')">+ Perpanjang (Extend)</button>
+            ${ hasPIN ? `
+              <button class="btn btn-ghost btn-sm" onclick="togglePanel('username-${ lic.id }')">Ganti Username (Change Name)</button>
+            ` : `<span class="text-xs text-muted" style="padding:0.3rem 0.5rem;">(PIN milik lisensi lain)</span>` }
+          </div>
+
+          <!-- Extend panel -->
+          <div id="extend-${ lic.id }" class="action-panel" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--c-border);">
+            <div style="font-size:var(--text-sm);font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.75rem;">Perpanjang Lisensi ${ lic.scriptType.code }</div>
+            <form method="POST" action="/manage/extend">
+              <input type="hidden" name="pin" value="${ pin }">
+              <input type="hidden" name="licenseId" value="${ lic.id }">
+              <div class="form-group" style="max-width:320px;margin-bottom:0.75rem;">
+                <label>Kode Voucher Perpanjangan</label>
+                <input type="text" name="voucherCode" class="mono-input" placeholder="Voucher ${ lic.scriptType.code }-7D-XXXXXX" style="text-transform:uppercase;" autocomplete="off" spellcheck="false" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">Redeem & Perpanjang</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="togglePanel('extend-${ lic.id }')">Batal</button>
+            </form>
+          </div>
+
+          <!-- Change name panel -->
+          ${ hasPIN ? `
+            <div id="username-${ lic.id }" class="action-panel" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--c-border);">
+              <div style="font-size:var(--text-sm);font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Ganti Username Lucifer</div>
+              <div class="text-xs text-muted" style="margin-bottom:0.75rem;">
+                Username lama: <span class="text-mono">${ primaryLicense.username }</span><br>
+                ⚠️ Ganti username membutuhkan <strong>Voucher Ganti Nama (CN-XXXXXX)</strong> yang digenerate oleh admin.
+              </div>
+              <form method="POST" action="/manage/change-username">
+                <input type="hidden" name="pin" value="${ pin }">
+                <div class="form-group" style="max-width:320px;margin-bottom:0.75rem;">
+                  <label>Username Baru</label>
+                  <input type="text" name="newUsername" class="mono-input" placeholder="username_baru" autocomplete="off" spellcheck="false" required>
+                </div>
+                <div class="form-group" style="max-width:320px;margin-bottom:0.75rem;">
+                  <label>Kode Voucher Ganti Nama (CN-XXXXXX)</label>
+                  <input type="text" name="voucherCode" class="mono-input" placeholder="CN-XXXXXX" style="text-transform:uppercase;" autocomplete="off" spellcheck="false" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Yakin ingin memproses pergantian username?')">Proses Ganti Username</button>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="togglePanel('username-${ lic.id }')">Batal</button>
+              </form>
+            </div>
+          ` : '' }
+        </div>
+      `;
+    }).join('');
+
+    bodyHtml = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap;">
+        <div>
+          <h1 class="page-title" style="margin-bottom:0.15rem;">Kelola Lisensi</h1>
+          <div style="color:var(--c-muted);font-size:var(--text-sm);">
+            Username: <span class="text-mono" style="color:var(--c-text);">${ primaryLicense.username }</span>
+          </div>
+        </div>
+        <a href="/manage" class="btn btn-ghost btn-sm">← Keluar</a>
+      </div>
+
+      ${ error ? `<div class="alert alert-error">${error}</div>` : '' }
+      ${ success ? `<div class="alert alert-success">${success}</div>` : '' }
+
+      ${ licCards }
+
+      <script>
+        function togglePanel(id) {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const isOpen = el.style.display !== 'none';
+          document.querySelectorAll('.action-panel').forEach(p => p.style.display = 'none');
+          if (!isOpen) el.style.display = 'block';
+        }
+      </script>
+    `;
+  }
+%>
+
+<%- include('../layouts/main', { title, currentPage, body: bodyHtml }) %>

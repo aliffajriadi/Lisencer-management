@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model ScriptType {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique   // contoh: "DF"
+  name      String              // contoh: "Dirtfarm Auto Farm"
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  licenses  License[]
+  vouchers  VoucherCode[]
+}
+
+model License {
+  id              Int         @id @default(autoincrement())
+  username        String                // username Lucifer
+  scriptTypeId    Int
+  scriptType      ScriptType  @relation(fields: [scriptTypeId], references: [id])
+  expiresAt       DateTime
+  revoked         Boolean     @default(false)
+  managementPin   String?               // PIN rahasia, di-generate saat redeem pertama, shown once
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  usernameChanges UsernameChangeLog[]
+
+  @@unique([username, scriptTypeId])
+}
+
+model UsernameChangeLog {
+  id          Int      @id @default(autoincrement())
+  licenseId   Int
+  license     License  @relation(fields: [licenseId], references: [id])
+  oldUsername String
+  newUsername String
+  changedAt   DateTime @default(now())
+  changedBy   String   // 'user' atau 'admin:<username>'
+}
+
+model VoucherCode {
+  id               Int        @id @default(autoincrement())
+  code             String     @unique
+  scriptTypeId     Int
+  scriptType       ScriptType @relation(fields: [scriptTypeId], references: [id])
+  durationDays     Int
+  batchLabel       String?
+  usedByUsername   String?
+  usedAt           DateTime?
+  createdAt        DateTime   @default(now())
+  createdByAdminId Int
+  createdByAdmin   AdminUser  @relation(fields: [createdByAdminId], references: [id])
+  voided           Boolean    @default(false)
+}
+
+model NameChangeVoucher {
+  id               Int       @id @default(autoincrement())
+  code             String    @unique // contoh: "CN-XXXXXX"
+  usedByUsername   String?   // Username lama yang melakukan pergantian nama
+  usedAt           DateTime?
+  createdAt        DateTime  @default(now())
+  createdByAdminId Int
+  createdByAdmin   AdminUser @relation(fields: [createdByAdminId], references: [id])
+  voided           Boolean   @default(false)
+}
+
+model SystemSetting {
+  key   String @id // contoh: "ad_config"
+  value String // JSON string berisi { enabled, title, content, linkText, linkUrl }
+}
+
+model AdminUser {
+  id                 Int                 @id @default(autoincrement())
+  username           String              @unique
+  passwordHash       String
+  createdAt          DateTime            @default(now())
+  vouchers           VoucherCode[]
+  nameChangeVouchers NameChangeVoucher[]
+}

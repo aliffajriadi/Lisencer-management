@@ -1,0 +1,74 @@
+<%
+  var title = 'Riwayat Ganti Username';
+  var currentPage = 'username-changes';
+  function fmtDate(d) {
+    if (!d) return '-';
+    return new Date(d).toLocaleString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  function pageUrl(p) {
+    var params = new URLSearchParams();
+    if (filters && filters.search) params.set('search', filters.search);
+    params.set('page', p);
+    return '/admin/username-changes?' + params.toString();
+  }
+  var body = `
+    <div class="admin-page-header">
+      <div class="admin-page-title">Riwayat Ganti Username</div>
+    </div>
+
+    <form method="GET" action="/admin/username-changes">
+      <div class="filter-bar" style="margin-bottom:1rem;">
+        <div class="form-group">
+          <label>Cari Username</label>
+          <input type="text" name="search" value="${ filters && filters.search ? filters.search : '' }" placeholder="username lama atau baru...">
+        </div>
+        <div class="form-group" style="flex:0">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-ghost">Filter</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="text-muted text-xs mb-1">${ pagination.total } perubahan ditemukan &mdash; hal ${ pagination.page }/${ pagination.totalPages || 1 }</div>
+
+    <div class="table-wrap mb-2">
+      <table>
+        <thead>
+          <tr>
+            <th>Lisensi ID</th>
+            <th>Script</th>
+            <th>Username Lama</th>
+            <th>Username Baru</th>
+            <th>Oleh</th>
+            <th>Waktu</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ logs.length === 0 ? '<tr><td colspan="7" style="text-align:center;padding:1.5rem" class="text-muted text-sm">Belum ada riwayat ganti username</td></tr>' :
+            logs.map(log => `
+              <tr>
+                <td class="td-mono text-muted">#${ log.licenseId }</td>
+                <td class="td-mono">${ log.license && log.license.scriptType ? log.license.scriptType.code : '?' }</td>
+                <td class="td-mono">${ log.oldUsername }</td>
+                <td class="td-mono" style="color:var(--c-accent);">${ log.newUsername }</td>
+                <td class="text-xs">${ log.changedBy === 'user' ? '<span class="badge badge-unused">User</span>' : '<span class="badge badge-revoked">Admin</span>' }</td>
+                <td class="td-mono text-xs">${ fmtDate(log.changedAt) }</td>
+                <td><a href="/admin/licenses/${ log.licenseId }/edit" class="btn btn-ghost btn-sm">Edit Lisensi</a></td>
+              </tr>
+            `).join('')
+          }
+        </tbody>
+      </table>
+    </div>
+
+    ${ pagination.totalPages > 1 ? `
+    <div class="pagination">
+      ${ pagination.page > 1 ? `<a href="${ pageUrl(pagination.page - 1) }">← Prev</a>` : '' }
+      <span>${ pagination.page } / ${ pagination.totalPages }</span>
+      ${ pagination.page < pagination.totalPages ? `<a href="${ pageUrl(pagination.page + 1) }">Next →</a>` : '' }
+    </div>
+    ` : '' }
+  `;
+%>
+<%- include('../layouts/admin', { title, currentPage, admin, body }) %>

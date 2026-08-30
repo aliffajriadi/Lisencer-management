@@ -1,0 +1,50 @@
+<%
+  var title = 'Generate Voucher Ganti Username';
+  var currentPage = 'vouchers';
+  var body = `
+    <div class="admin-page-header">
+      <div class="admin-page-title">Generate Voucher Ganti Username</div>
+      <div class="flex gap-1">
+        <a href="/admin/vouchers" class="btn btn-ghost btn-sm">← Daftar Voucher SC</a>
+      </div>
+    </div>
+
+    ${ error ? `<div class="alert alert-error">${ error }</div>` : '' }
+
+    <div style="background:var(--c-surface); border:1px solid var(--c-border); border-radius:4px; padding:1.25rem; margin-bottom:1.5rem; max-width:600px;">
+      <p class="text-sm text-muted mb-2">Voucher ganti username ini digunakan oleh user di halaman <strong>/manage</strong> untuk melakukan migrasi/ganti username Lucifer mereka secara mandiri menggunakan PIN Management yang mereka miliki.</p>
+      
+      <form method="POST" action="/admin/vouchers/generate-name-change">
+        <div class="form-group" style="max-width:200px;">
+          <label for="nc-qty">Jumlah Voucher</label>
+          <input type="number" name="quantity" id="nc-qty" min="1" max="100" value="1" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Voucher</button>
+      </form>
+    </div>
+
+    ${ result ? `
+    <div class="mt-2">
+      <div class="alert alert-success">
+        Berhasil generate <strong>${ result.codes.length }</strong> voucher ganti username.
+      </div>
+
+      <div class="section-title">Daftar Kode Voucher Ganti Username</div>
+      <div class="voucher-code-list mb-2">${ result.codes.join('\n') }</div>
+
+      <div class="flex gap-2">
+        <button onclick="copyAll()" class="btn btn-ghost btn-sm">Copy Semua</button>
+        <a href="/admin/vouchers/export?file=${ result.txtFile.split('/').pop() }" class="btn btn-ghost btn-sm">Download .txt</a>
+      </div>
+
+      <script>
+        function copyAll() {
+          const text = document.querySelector('.voucher-code-list').textContent.trim();
+          navigator.clipboard.writeText(text).then(() => alert('Disalin ke clipboard!'));
+        }
+      </script>
+    </div>
+    ` : '' }
+  `;
+%>
+<%- include('../../layouts/admin', { title, currentPage, admin, body }) %>

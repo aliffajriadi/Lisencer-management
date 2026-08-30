@@ -1,0 +1,119 @@
+<%
+  var title = 'Redeem Voucher — Lucifer License';
+  var currentPage = 'redeem';
+  function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  var successHtml = '';
+  if (success) {
+    var exDate = new Date(success.expiresAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+    var pinBlock = '';
+    if (success.isNew && success.managementPin) {
+      pinBlock = `
+        <div style="
+          background: #0d1a0a;
+          border: 2px solid var(--c-active);
+          border-radius: 6px;
+          padding: 1.25rem 1.5rem;
+          margin-top: 1.25rem;
+        ">
+          <div style="
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--c-active);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+          ">🔑 Management PIN — SIMPAN INI!</div>
+          <div style="
+            font-family: var(--f-mono);
+            font-size: 1.6rem;
+            letter-spacing: 0.15em;
+            color: #fff;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+          ">${ success.managementPin }</div>
+          <div style="color: #86efac; font-size: var(--text-sm); line-height: 1.6;">
+            PIN ini <strong>hanya ditampilkan sekali</strong> dan tidak bisa dilihat lagi.<br>
+            Gunakan PIN ini di <a href="/manage" style="color: var(--c-active);">/manage</a> untuk ganti username atau perpanjang lisensi.
+          </div>
+          <button onclick="navigator.clipboard.writeText('${ success.managementPin }').then(()=>alert('PIN disalin!'))" class="btn btn-ghost btn-sm" style="margin-top:0.75rem;">Copy PIN</button>
+        </div>
+      `;
+    }
+    successHtml = `
+      <div class="alert alert-success">
+        <strong>${ success.isNew ? '✅ Lisensi baru dibuat!' : '✅ Lisensi diperpanjang!' }</strong><br>
+        Script: <span class="text-mono">${ success.scriptCode }</span> — ${ success.scriptType }<br>
+        Berlaku hingga: <strong>${ exDate }</strong> (+${ success.durationDays } hari)
+      </div>
+      ${ pinBlock }
+      ${ !success.isNew ? '<div class="alert alert-info mt-2" style="margin-top:0.75rem;">ℹ️ Perpanjangan berhasil. Management PIN kamu tidak berubah.</div>' : '' }
+      <div class="flex gap-2 mt-2" style="margin-top:1rem;">
+        <a href="/check" class="btn btn-ghost btn-sm">Cek Status Lisensi →</a>
+        <a href="/manage" class="btn btn-ghost btn-sm">Kelola Lisensi →</a>
+      </div>
+      
+      ${ success.isNew && success.managementPin ? `
+        <script>
+          localStorage.setItem('lucifer_manage_pin', '${ success.managementPin }');
+          
+          // Tambahkan juga ke history PIN list
+          try {
+            let pinHistory = JSON.parse(localStorage.getItem('lucifer_pin_history') || '[]');
+            if (!pinHistory.includes('${ success.managementPin }')) {
+              pinHistory.unshift('${ success.managementPin }');
+              if (pinHistory.length > 5) pinHistory.pop();
+              localStorage.setItem('lucifer_pin_history', JSON.stringify(pinHistory));
+            }
+          } catch(e) {}
+        </script>
+      ` : '' }
+    `;
+  }
+  var body = `
+    <h1 class="page-title">Redeem Voucher</h1>
+    <p class="page-subtitle">Masukkan username Lucifer dan kode voucher yang kamu terima dari admin.</p>
+
+    ${ error ? `<div class="alert alert-error">${ error }</div>` : '' }
+    ${ successHtml }
+
+    ${ !success ? `
+    <div class="form-block">
+      <form method="POST" action="/redeem">
+        <div class="form-group">
+          <label for="r-username">Username Lucifer</label>
+          <input
+            type="text"
+            name="username"
+            id="r-username"
+            class="mono-input"
+            placeholder="username_lucifer"
+            value="${ escHtml(username) }"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+        <div class="form-group">
+          <label for="r-code">Kode Voucher</label>
+          <input
+            type="text"
+            name="code"
+            id="r-code"
+            class="mono-input"
+            placeholder="DF-7D-XXXXXX"
+            value="${ escHtml(code) }"
+            autocomplete="off"
+            spellcheck="false"
+            style="text-transform:uppercase;"
+          >
+        </div>
+        <button type="submit" class="btn btn-primary">Redeem Voucher</button>
+      </form>
+    </div>
+
+    <div class="alert alert-info mt-2">
+      <strong>Catatan:</strong> 1 kode voucher hanya bisa dipakai satu kali. Saat registrasi pertama, kamu akan menerima <strong>Management PIN</strong> — simpan baik-baik, dipakai untuk kelola lisensi (ganti username, perpanjang) di <a href="/manage">/manage</a>.
+    </div>
+    ` : '' }
+  `;
+%>
+<%- include('../layouts/main', { title, currentPage, body }) %>

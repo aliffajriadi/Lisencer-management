@@ -1,0 +1,48 @@
+<%
+  var title = 'Pengaturan Iklan / Pop-Up';
+  var currentPage = 'ad-config';
+  var body = `
+    <div class="admin-page-header">
+      <div class="admin-page-title">Pengaturan Iklan / Pop-Up</div>
+    </div>
+
+    ${ error ? `<div class="alert alert-error">${ error }</div>` : '' }
+    ${ success ? `<div class="alert alert-success">${ success }</div>` : '' }
+
+    <div style="background:var(--c-surface); border:1px solid var(--c-border); border-radius:4px; padding:1.5rem; max-width:600px;">
+      <p class="text-sm text-muted mb-3">Tentukan pop-up/iklan pengumuman yang muncul saat pengguna pertama kali membuka halaman publik (Cek Status / Redeem / Manage).</p>
+      
+      <form method="POST" action="/admin/ad-config">
+        <div class="form-group">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; text-transform:none;">
+            <input type="checkbox" name="enabled" value="1" ${ config.enabled ? 'checked' : '' } style="width:auto; cursor:pointer;">
+            Aktifkan Pop-Up Iklan
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="ad-title">Judul Pop-up</label>
+          <input type="text" name="title" id="ad-title" placeholder="PROMO ANJAYSTORE!" value="${ config.title || '' }" required>
+        </div>
+
+        <div class="form-group">
+          <label for="ad-content">Konten Pengumuman (HTML didukung)</label>
+          <textarea name="content" id="ad-content" rows="6" placeholder="Dapatkan diskon 50% untuk perpanjangan script DF..." required>${ config.content || '' }</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="ad-link-text">Teks Link Tombol (Opsional)</label>
+          <input type="text" name="linkText" id="ad-link-text" placeholder="Beli Sekarang" value="${ config.linkText || '' }">
+        </div>
+
+        <div class="form-group">
+          <label for="ad-link-url">URL Link Tombol (Opsional)</label>
+          <input type="text" name="linkUrl" id="ad-link-url" placeholder="https://discord.gg/anjaystore" value="${ config.linkUrl || '' }">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+      </form>
+    </div>
+  `;
+%>
+<%- include('../layouts/admin', { title, currentPage, admin, body }) %>

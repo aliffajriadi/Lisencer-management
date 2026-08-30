@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Admin' %> — Lucifer Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">LUCIFER//ADMIN</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Menu</div>
+      <a href="/admin" class="<%= currentPage === 'dashboard' ? 'active' : '' %>">
+        ⬜ Dashboard
+      </a>
+      <div class="sidebar-section-label">Data</div>
+      <a href="/admin/licenses" class="<%= currentPage === 'licenses' ? 'active' : '' %>">
+        ◈ Lisensi
+      </a>
+      <a href="/admin/vouchers" class="<%= currentPage === 'vouchers' ? 'active' : '' %>">
+        ◇ Voucher
+      </a>
+      <a href="/admin/script-types" class="<%= currentPage === 'script-types' ? 'active' : '' %>">
+        ◆ Jenis Script
+      </a>
+      <a href="/admin/username-changes" class="<%= currentPage === 'username-changes' ? 'active' : '' %>">
+        ↪ Ganti Username
+      </a>
+      <a href="/admin/ad-config" class="<%= currentPage === 'ad-config' ? 'active' : '' %>">
+        📢 Pengaturan Iklan
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-admin-name">Login sebagai <strong><%= admin %></strong></div>
+      <form method="POST" action="/admin/logout">
+        <button type="submit" class="btn btn-ghost btn-sm" style="width:100%">Logout</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <main class="admin-content">
+    <%- body %>
+  </main>
+</div>
+</body>
+</html>

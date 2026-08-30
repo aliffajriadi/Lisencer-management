@@ -1,0 +1,78 @@
+<%
+  var title = 'Cek Status Lisensi — Lucifer License';
+  var currentPage = 'check';
+  var body = `
+    <h1 class="page-title">Cek Status Lisensi</h1>
+    <p class="page-subtitle">Masukkan username Lucifer kamu untuk melihat status lisensi yang aktif.</p>
+
+    <div class="form-block">
+      <form method="POST" action="/check">
+        <div class="form-group flex gap-1 items-center">
+          <input
+            type="text"
+            name="username"
+            id="username"
+            class="mono-input grow"
+            placeholder="username_lucifer"
+            value="${ username ? username.replace(/"/g, '&quot;') : '' }"
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button type="submit" class="btn btn-primary">Cek</button>
+        </div>
+      </form>
+    </div>
+
+    ${ error ? `<div class="alert alert-error">${ error }</div>` : '' }
+
+    ${ query !== null ? `
+    <div class="result-block">
+      <div class="result-username">
+        ${ username } <span>— hasil pencarian</span>
+      </div>
+
+      ${ licenses && licenses.length > 0 ? `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Script</th>
+              <th>Expired</th>
+              <th>Sisa Hari</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ licenses.map(lic => {
+              const st = lic.revoked ? 'revoked' : (new Date(lic.expiresAt) <= new Date() ? 'expired' : 'active');
+              const label = st === 'active' ? 'Aktif' : st === 'expired' ? 'Expired' : 'Revoked';
+              const days = st === 'active' ? Math.ceil((new Date(lic.expiresAt) - new Date()) / 86400000) : 0;
+              const dateStr = new Date(lic.expiresAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+              return `
+                <tr>
+                  <td><span class="text-mono">${ lic.scriptType.code }</span> <span class="text-muted text-xs">— ${ lic.scriptType.name }</span></td>
+                  <td class="td-mono">${ dateStr }</td>
+                  <td class="td-mono">${ st === 'active' ? days + ' hari' : '—' }</td>
+                  <td><span class="badge badge-${ st }">${ label }</span></td>
+                </tr>
+              `;
+            }).join('') }
+          </tbody>
+        </table>
+      </div>
+      ` : `<p class="no-license">Tidak ada lisensi terdaftar untuk username <strong>${ username }</strong>.<br>Gunakan <a href="/redeem">halaman redeem</a> jika kamu punya kode voucher.</p>` }
+    </div>
+    ` : '' }
+
+    <div class="tips-block" style="margin-top: 2rem; padding: 1rem; border-radius: 8px; background: rgba(255, 255, 255, 0.05);">
+      <h3 style="margin-bottom: 0.75rem; font-size: 1.1rem; font-weight: 600;">💡 Panduan / Tips Penggunaan:</h3>
+      <ol style="padding-left: 1.25rem; line-height: 1.6; margin: 0;">
+        <li>Beli lisensi terlebih dahulu.</li>
+        <li>Kamu akan mendapatkan script yang diberikan setelah pembelian.</li>
+        <li>Redeem voucher sesuai lisensi dan username Lucifer kamu di menu <a href="/redeem" style="text-decoration: underline;">/redeem</a>.</li>
+        <li>Jika sudah, jalankan (run) script Lucifer secara langsung dan siap dipakai!</li>
+      </ol>
+    </div>
+  `;
+%>
+<%- include('../layouts/main', { title, currentPage, body }) %>
